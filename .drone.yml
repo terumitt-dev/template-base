@@ -21,12 +21,6 @@ steps:
       - '[ -n "$AWS_ACCESS_KEY_ID" ] || (echo "AWS_ACCESS_KEY_ID is not set" && exit 1)'
       - '[ -n "$AWS_SECRET_ACCESS_KEY" ] || (echo "AWS_SECRET_ACCESS_KEY is not set" && exit 1)'
 
-  # 確認用ステップ（必要なければ削除可能）
-  - name: info
-    image: alpine
-    commands:
-      - echo "Running common Drone steps"
-      - echo "ECR_REPO=${ECR_REPO}"
 
 # 後でリポジトリ固有のステップを追加可能
 # 例：
