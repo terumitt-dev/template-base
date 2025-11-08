@@ -1,0 +1,42 @@
+# base-drone.yml
+kind: pipeline
+type: docker
+name: base
+
+#──────────────────────────────
+# 共通環境変数（必要に応じて追加）
+#──────────────────────────────
+environment:
+  AWS_REGION: ap-northeast-1
+  ECR_REPO: ""          # 各リポジトリで設定する
+  AWS_ACCESS_KEY_ID:
+    from_secret: aws_access_key_id
+  AWS_SECRET_ACCESS_KEY:
+    from_secret: aws_secret_access_key
+
+#──────────────────────────────
+# 共通ステップ
+#──────────────────────────────
+steps:
+  - name: info
+    image: alpine
+    commands:
+      - echo "Running common Drone steps"
+      - echo "AWS_REGION=${AWS_REGION}"
+      - echo "ECR_REPO=${ECR_REPO}"
+
+#──────────────────────────────
+# 後でリポジトリ固有のステップを追加可能
+#──────────────────────────────
+# 例：
+#   - name: build-frontend
+#     image: node:20
+#     commands:
+#       - npm ci
+#       - npm run build
+#
+#   - name: build-backend
+#     image: ruby:3.3
+#     commands:
+#       - bundle install
+#       - rails db:migrate
