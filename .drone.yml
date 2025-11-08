@@ -19,20 +19,17 @@ environment:
 # 共通ステップ
 #──────────────────────────────
 steps:
-  # 変数チェック
   - name: check-vars
     image: alpine
     commands:
       - '[ -n "$ECR_REPO" ] || (echo "ECR_REPO is not set" && exit 1)'
       - '[ -n "$AWS_REGION" ] || (echo "AWS_REGION is not set" && exit 1)'
 
-  # 確認用ステップ（安全な範囲のみ echo）
   - name: info
     image: alpine
     commands:
       - echo "Running common Drone steps"
-      - echo "AWS_REGION=${AWS_REGION}"
-      - echo "ECR_REPO=${ECR_REPO}"
+      - echo "ECR_REPO=${ECR_REPO}"   # AWSキーは出さない
 
 #──────────────────────────────
 # 後でリポジトリ固有のステップを追加可能
