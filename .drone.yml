@@ -2,19 +2,18 @@ kind: pipeline
 type: docker
 name: base
 
-environment:
-  AWS_REGION:
-    from_secret: AWS_REGION
-  ECR_REPO:                # 各リポジトリで必ず設定
-  AWS_ACCESS_KEY_ID:
-    from_secret: AWS_ACCESS_KEY_ID
-  AWS_SECRET_ACCESS_KEY:
-    from_secret: AWS_SECRET_ACCESS_KEY
-
 steps:
   # 必須変数チェック
   - name: check-vars
     image: alpine
+    environment:
+      AWS_REGION:
+        from_secret: AWS_REGION
+      AWS_ACCESS_KEY_ID:
+        from_secret: AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: AWS_SECRET_ACCESS_KEY
+      ECR_REPO:   # 各リポジトリで上書き必須
     commands:
       - set -euxo pipefail
       - '[ -n "$ECR_REPO" ] || (echo "ECR_REPO is not set" && exit 1)'
@@ -22,4 +21,7 @@ steps:
       - '[ -n "$AWS_ACCESS_KEY_ID" ] || (echo "AWS_ACCESS_KEY_ID is not set" && exit 1)'
       - '[ -n "$AWS_SECRET_ACCESS_KEY" ] || (echo "AWS_SECRET_ACCESS_KEY is not set" && exit 1)'
 
-# 後でリポジトリ固有のステップを追加可能
+# 各リポジトリで以下に追加すればOK
+# steps:
+#   - name: build
+#   - name: deploy
