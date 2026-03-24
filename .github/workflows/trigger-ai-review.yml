@@ -19,15 +19,57 @@ permissions:
 
 jobs:
   # ──────────────────────────────────────
-  # Team member check (shared by all jobs)
+  # Qodo: team check + ai-review
   # ──────────────────────────────────────
-  check-team-member:
+  check-team-member-qodo:
     if: |
-      (github.event_name == 'issue_comment' && (
+      github.event_name == 'issue_comment' && (
         github.event.comment.body == '/review' ||
         github.event.comment.body == '/describe' ||
-        github.event.comment.body == '/improve' ||
-        contains(github.event.comment.body, '@claude')
+        github.event.comment.body == '/improve'
+      )
+    runs-on: ubuntu-latest
+    outputs:
+      allowed: ${{ steps.check.outputs.allowed }}
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Check if commenter is in team
+        id: check
+        run: |
+          COMMENTER=${{ github.event.comment.user.login }}
+
+          TEAM_MEMBERS=$(curl -s -H "Authorization: Bearer ${{ secrets.TEAM_PAT }}" \
+            https://api.github.com/orgs/terumitt-dev/teams/ai-reviewers/members)
+
+          LOGINS=$(echo "$TEAM_MEMBERS" | jq -r '.[].login')
+
+          if echo "$LOGINS" | grep -q "^$COMMENTER$"; then
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  ai-review:
+    needs: check-team-member-qodo
+    if: needs.check-team-member-qodo.outputs.allowed == 'true'
+    uses: terumitt-dev/github_actions_ci-cd/.github/workflows/reusable-ci.yml@main
+    with:
+      pr_number: ${{ github.event.issue.number }}
+      command: ${{ github.event.comment.body }}
+      target_repo: ${{ github.repository }}
+    secrets:
+      OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+
+  # ──────────────────────────────────────
+  # Claude Code: team check + claude-code
+  # ──────────────────────────────────────
+  check-team-member-claude:
+    if: |
+      (github.event_name == 'issue_comment' && (
+        contains(github.event.comment.body, '@claude') ||
+        github.event.comment.body == '/improve'
       )) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
@@ -35,24 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       allowed: ${{ steps.check.outputs.allowed }}
-      run_qodo: ${{ steps.detect.outputs.run_qodo }}
-      run_claude: ${{ steps.detect.outputs.run_claude }}
     steps:
-      - name: Detect command type
-        id: detect
-        run: |
-          BODY="${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}"
-          if [ "$BODY" = "/improve" ]; then
-            echo "run_qodo=true" >> "$GITHUB_OUTPUT"
-            echo "run_claude=true" >> "$GITHUB_OUTPUT"
-          elif echo "$BODY" | grep -q '@claude'; then
-            echo "run_qodo=false" >> "$GITHUB_OUTPUT"
-            echo "run_claude=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run_qodo=true" >> "$GITHUB_OUTPUT"
-            echo "run_claude=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
@@ -79,30 +104,9 @@ jobs:
             echo "allowed=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # ──────────────────────────────────────
-  # PR Pilot (OpenAI) - /review /describe /improve
-  # ──────────────────────────────────────
-  ai-review:
-    needs: check-team-member
-    if: |
-      needs.check-team-member.outputs.allowed == 'true' &&
-      needs.check-team-member.outputs.run_qodo == 'true'
-    uses: terumitt-dev/github_actions_ci-cd/.github/workflows/reusable-ci.yml@main
-    with:
-      pr_number: ${{ github.event.issue.number }}
-      command: ${{ github.event.comment.body }}
-      target_repo: ${{ github.repository }}
-    secrets:
-      OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-
-  # ──────────────────────────────────────
-  # Claude Code - @claude mentions
-  # ──────────────────────────────────────
   claude-code:
-    needs: check-team-member
-    if: |
-      needs.check-team-member.outputs.allowed == 'true' &&
-      needs.check-team-member.outputs.run_claude == 'true'
+    needs: check-team-member-claude
+    if: needs.check-team-member-claude.outputs.allowed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -114,7 +118,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          trigger_phrase: ${{ needs.check-team-member.outputs.run_qodo == 'true' && '/improve' || '@claude' }}
-          prompt: ${{ needs.check-team-member.outputs.run_qodo == 'true' && 'このPRの差分をレビューし、コードの改善提案をしてください。' || '' }}
+          trigger_phrase: ${{ github.event.comment.body == '/improve' && '/improve' || '@claude' }}
+          prompt: ${{ github.event.comment.body == '/improve' && 'このPRの差分をレビューし、コードの改善提案をしてください。' || '' }}
           additional_permissions: |
             actions: read
