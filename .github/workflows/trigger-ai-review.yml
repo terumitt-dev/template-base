@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   # ──────────────────────────────────────
-  # Qodo: team check + ai-review
+  # Qodo: /review /describe /improve
   # ──────────────────────────────────────
   check-team-member-qodo:
     if: |
@@ -63,14 +63,11 @@ jobs:
       OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
 
   # ──────────────────────────────────────
-  # Claude Code: team check + claude-code
+  # Claude Code: @claude mentions
   # ──────────────────────────────────────
   check-team-member-claude:
     if: |
-      (github.event_name == 'issue_comment' && (
-        contains(github.event.comment.body, '@claude') ||
-        github.event.comment.body == '/improve'
-      )) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
@@ -118,7 +115,5 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          trigger_phrase: ${{ github.event.comment.body == '/improve' && '/improve' || '@claude' }}
-          prompt: ${{ github.event.comment.body == '/improve' && 'このPRの差分をレビューし、コードの改善提案をしてください。' || '' }}
           additional_permissions: |
             actions: read
