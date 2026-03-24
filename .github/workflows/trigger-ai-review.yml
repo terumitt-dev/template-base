@@ -35,16 +35,22 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       allowed: ${{ steps.check.outputs.allowed }}
-      is_claude: ${{ steps.detect.outputs.is_claude }}
+      run_qodo: ${{ steps.detect.outputs.run_qodo }}
+      run_claude: ${{ steps.detect.outputs.run_claude }}
     steps:
       - name: Detect command type
         id: detect
         run: |
           BODY="${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}"
-          if echo "$BODY" | grep -q '@claude'; then
-            echo "is_claude=true" >> "$GITHUB_OUTPUT"
+          if [ "$BODY" = "/improve" ]; then
+            echo "run_qodo=true" >> "$GITHUB_OUTPUT"
+            echo "run_claude=true" >> "$GITHUB_OUTPUT"
+          elif echo "$BODY" | grep -q '@claude'; then
+            echo "run_qodo=false" >> "$GITHUB_OUTPUT"
+            echo "run_claude=true" >> "$GITHUB_OUTPUT"
           else
-            echo "is_claude=false" >> "$GITHUB_OUTPUT"
+            echo "run_qodo=true" >> "$GITHUB_OUTPUT"
+            echo "run_claude=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install jq
@@ -80,7 +86,7 @@ jobs:
     needs: check-team-member
     if: |
       needs.check-team-member.outputs.allowed == 'true' &&
-      needs.check-team-member.outputs.is_claude == 'false'
+      needs.check-team-member.outputs.run_qodo == 'true'
     uses: terumitt-dev/github_actions_ci-cd/.github/workflows/reusable-ci.yml@main
     with:
       pr_number: ${{ github.event.issue.number }}
@@ -96,7 +102,7 @@ jobs:
     needs: check-team-member
     if: |
       needs.check-team-member.outputs.allowed == 'true' &&
-      needs.check-team-member.outputs.is_claude == 'true'
+      needs.check-team-member.outputs.run_claude == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -108,5 +114,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          direct_prompt: |
+            ${{ needs.check-team-member.outputs.run_qodo == 'true' && 'このPRの差分をレビューし、コードの改善提案をしてください。' || '' }}
           additional_permissions: |
             actions: read
