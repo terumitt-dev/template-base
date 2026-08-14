@@ -34,7 +34,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          direct_prompt: |
+          prompt: |
             Review this pull request for bugs, security vulnerabilities, and code quality issues.
             If there are no significant issues, approve the PR by running:
             gh pr review ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --approve --body "Approved by Claude: no significant issues found."
