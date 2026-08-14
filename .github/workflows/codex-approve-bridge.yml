@@ -1,0 +1,26 @@
+name: Codex Approve Bridge
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  approve:
+    # Codex が「重大な問題なし」と判定したコメントを検知して正式 Approve する
+    if: |
+      github.event.issue.pull_request != null &&
+      github.event.comment.user.login == 'chatgpt-codex-connector' &&
+      contains(github.event.comment.body, 'Didn''t find any major issues')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve PR
+        run: |
+          gh pr review "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --approve \
+            --body "Codex レビュー完了：重大な問題なし。承認します。"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
