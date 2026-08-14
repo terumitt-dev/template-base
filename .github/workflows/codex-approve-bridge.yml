@@ -12,7 +12,7 @@ jobs:
     # Codex が「重大な問題なし」と判定したコメントを検知して正式 Approve する
     if: |
       github.event.issue.pull_request != null &&
-      github.event.comment.user.login == 'chatgpt-codex-connector' &&
+      github.event.comment.user.login == 'chatgpt-codex-connector[bot]' &&
       contains(github.event.comment.body, 'Didn''t find any major issues')
     runs-on: ubuntu-latest
     steps:
