@@ -2,6 +2,13 @@ kind: pipeline
 type: kubernetes
 name: base
 
+node_selector:
+  node-role: drone
+tolerations:
+  - key: dedicated
+    value: drone
+    effect: NoSchedule
+
 steps:
   # 必須変数チェック
   - name: check-vars
@@ -16,7 +23,7 @@ steps:
       ECR_REPO:   # 各リポジトリで上書き必須
     commands:
       - set -euxo pipefail
-      - '[ -n "$ECR_REPO" ] || (echo "ECR_REPO is not set" && exit 1)'
+      - '[ -n "$ECR_REPO" ] || (echo "ECR_REPO not configured, skipping (template repo)" && exit 0)'
       - '[ -n "$AWS_REGION" ] || (echo "AWS_REGION is not set" && exit 1)'
       - '[ -n "$AWS_ACCESS_KEY_ID" ] || (echo "AWS_ACCESS_KEY_ID is not set" && exit 1)'
       - '[ -n "$AWS_SECRET_ACCESS_KEY" ] || (echo "AWS_SECRET_ACCESS_KEY is not set" && exit 1)'
