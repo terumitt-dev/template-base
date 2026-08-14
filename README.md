@@ -18,7 +18,7 @@ Claude と Codex が PR を自動レビューする。
 
 | Bot | トリガー | Approve |
 |---|---|---|
-| Claude | `@claude` コメント（org メンバーのみ） | 問題なければ自動 Approve |
+| Claude | `@claude` コメント（org メンバー・コラボレーター限定） | 問題なければ自動 Approve |
 | Codex | PR open / `@codex review` コメント | 問題なければ自動 Approve（bridge 経由） |
 
 - レビューコメントはすべて日本語
