@@ -42,6 +42,19 @@ jobs:
           additional_permissions: |
             actions: read
 
+  # PR open 時に @codex をコメントして Codex レビューをトリガー
+  codex-trigger:
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Codex Review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "@codex please review this pull request"
+
   # @claude メンション時の手動トリガー
   claude-mention:
     if: |
