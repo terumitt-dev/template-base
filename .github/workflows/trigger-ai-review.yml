@@ -44,7 +44,7 @@ jobs:
 
   # PR open 時に @codex をコメントして Codex レビューをトリガー
   codex-trigger:
-    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Codex Review
