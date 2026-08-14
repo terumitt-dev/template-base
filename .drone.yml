@@ -13,7 +13,7 @@ steps:
   - name: no-op
     image: alpine
     commands:
-      - echo "template repo: no build steps configured"
+      - echo "template repo - no build steps configured"
 
 # 各リポジトリでこのファイルをコピーして以下を追加
 # steps:
